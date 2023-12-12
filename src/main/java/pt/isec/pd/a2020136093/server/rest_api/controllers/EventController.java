@@ -9,6 +9,7 @@ import pt.isec.pd.a2020136093.server.rest_api.Application;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 @RestController
 public class EventController {
@@ -67,13 +68,29 @@ public class EventController {
         }
     }
 
+    // CONSULTAR EVENTOS CRIADOS
     @GetMapping("/events")
     public ResponseEntity<String> events(
-            @RequestParam(name = "filter") String filter
+            @RequestParam(name = "filter" ,required = false, defaultValue = "") String filter
     ) {
         if (Application.getClientData().getAdmin()) {
             ArrayList<ArrayList<String>> listaEventos = manageDB.checkEvents();
             StringBuilder sb = new StringBuilder();
+
+            if (!filter.isEmpty() && !listaEventos.isEmpty()) {
+                for(int i = 0; i < listaEventos.size(); i++){
+                    if(!(listaEventos.get(i).get(0).toUpperCase().contains(filter.toUpperCase())) &&
+                       !(listaEventos.get(i).get(1).toUpperCase().contains(filter.toUpperCase())) &&
+                       !(listaEventos.get(i).get(3).toUpperCase().contains(filter.toUpperCase())) &&
+                       !(listaEventos.get(i).get(4).toUpperCase().contains(filter.toUpperCase())) &&
+                       !(listaEventos.get(i).get(5).toUpperCase().contains(filter.toUpperCase())) &&
+                       !(listaEventos.get(i).get(6).toUpperCase().contains(filter.toUpperCase())) &&
+                       !(listaEventos.get(i).get(7).toUpperCase().contains(filter.toUpperCase()))){
+                        listaEventos.remove(i);
+                        --i;
+                    }
+                }
+            }
 
             if(!listaEventos.isEmpty()) {
                 sb.append(String.format("%-3s | %-15s | %-10s | %-15s | %-15s | %-15s | %-15s | %s\n", "ID", "Nome", "Código", "Local", "Data", "Hora de inicio", "Hora de fim", "Número presenças"));
@@ -97,9 +114,10 @@ public class EventController {
     }
 
 
+    // CONSULTAR PRESENÇAS DE EU PRÓPRIO
     @GetMapping("/presences")
     public ResponseEntity<String> presences(
-            @RequestParam(name = "filter") String filter
+            @RequestParam(name = "filter", required = false, defaultValue = "") String filter
     ) {
         if (Application.getClientData().getAdmin()) {
             return ResponseEntity.ok("This endpoint is for students!");
@@ -108,6 +126,19 @@ public class EventController {
         else {
             ArrayList<ArrayList<String>> listaPresencas = manageDB.checkPresences(Application.getClientData().getEmail());
             StringBuilder sb = new StringBuilder();
+
+            if (!filter.isEmpty() && !listaPresencas.isEmpty()) {
+                for(int i = 0; i < listaPresencas.size(); i++){
+                    if(!(listaPresencas.get(i).get(0).toUpperCase().contains(filter.toUpperCase())) &&
+                            !(listaPresencas.get(i).get(1).toUpperCase().contains(filter.toUpperCase())) &&
+                            !(listaPresencas.get(i).get(3).toUpperCase().contains(filter.toUpperCase())) &&
+                            !(listaPresencas.get(i).get(4).toUpperCase().contains(filter.toUpperCase())) &&
+                            !(listaPresencas.get(i).get(5).toUpperCase().contains(filter.toUpperCase()))){
+                        listaPresencas.remove(i);
+                        --i;
+                    }
+                }
+            }
 
             if(!listaPresencas.isEmpty()) {
                 sb.append(String.format("%-3s | %-15s | %-15s | %-15s | %-15s | %s\n", "ID", "Nome", "Local", "Data", "Hora de inicio", "Hora de fim"));

@@ -26,6 +26,9 @@ public class ManageConnections {
     private ClientData clientData;
     private EventsList eventsList;
 
+    public ManageConnections(){
+
+    }
     public ManageConnections(String serverIP, int serverPort) {
         this.serverIP = serverIP;
         this.serverPort = serverPort;

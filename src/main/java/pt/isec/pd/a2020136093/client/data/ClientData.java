@@ -3,6 +3,10 @@ package pt.isec.pd.a2020136093.client.data;
 import java.io.Serializable;
 
 public class ClientData implements Serializable {
+
+
+    private String token;
+
     private Boolean isAdmin;
     private String name;
     private String email;
@@ -52,5 +56,15 @@ public class ClientData implements Serializable {
     public void setNIdentificacao(String nIdentificacao) {
         this.nIdentificacao = nIdentificacao;
     }
+
+
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+    public String getToken() {
+        return token;
+    }
+
 
 }

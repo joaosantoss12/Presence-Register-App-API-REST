@@ -32,7 +32,7 @@ public final class PAInput {
     }
 
     //Adicionado overload À funcção readString para aceitar input vazio, conforme a terceira variável
-    public static String readString(String title,boolean onlyOneWord,boolean blankString) {
+    public static String readString(String title, boolean onlyOneWord, boolean blankString) {
         String value;
         do {
             if (title != null)

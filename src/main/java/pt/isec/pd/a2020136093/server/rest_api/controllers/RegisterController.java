@@ -21,7 +21,6 @@ public class RegisterController {
             @RequestParam(name = "nid") String nid
     )
     {
-        ResponseEntity.ok("CARALHOOOOO");
         try {
             if(manageDB.addNewUser(name, email, password, nid)){
                 return ResponseEntity.ok("Email: " + email + " registered!");

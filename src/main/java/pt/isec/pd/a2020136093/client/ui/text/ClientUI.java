@@ -2,17 +2,22 @@ package pt.isec.pd.a2020136093.client.ui.text;
 
 
 import pt.isec.pd.a2020136093.client.communication.ManageConnections;
+import pt.isec.pd.a2020136093.client.data.ClientData;
 import pt.isec.pd.a2020136093.client.utils.PAInput;
+import pt.isec.pd.a2020136093.utils.ENDPOINTS;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
+
+import static pt.isec.pd.a2020136093.server.rest_api.consumer.PdRestApiComSegurancaConsumer.sendRequestAndShowResponse;
 
 public class ClientUI {
-    ManageConnections manageConnections;
-    private boolean logged = false;
+    ClientData clientData;
+    ManageConnections manageConnections = new ManageConnections();
 
-    public ClientUI(ManageConnections manageConnections) {
-        this.manageConnections = manageConnections;
+    public ClientUI() {
+        this.clientData = new ClientData();
     }
 
     public void start() {
@@ -36,69 +41,42 @@ public class ClientUI {
                 }
             }
 
-            while (logged && !manageConnections.isAdmin()) {
-                option = PAInput.chooseOption("Escolha uma opcao:", "Editar dados registo", "Submeter codigo de presenca", "Consultar presencas", "Gerar ficheiro CSV (registo presencas)", "Logout");
+            while (clientData.getToken() != null && !clientData.getAdmin()) {
+                option = PAInput.chooseOption("Escolha uma opcao:", "Submeter codigo de presenca", "Consultar presencas", "Logout");
 
                 switch (option) {
                     case 1 -> {
-                        editarDados();
-                    }
-                    case 2 -> {
                         submeterCodigo();
                     }
-                    case 3 -> {
+                    case 2 -> {
                         consultarPresencas();
                     }
-                    case 4 -> {
-                        gerarFicheiroCSV();
-                    }
-                    case 5 -> {
+                    case 3 -> {
                         logout();
                     }
                 }
             }
 
-            while(logged && manageConnections.isAdmin()){
-                option = PAInput.chooseOption("Escolha uma opcao:", "Criar novo evento", "Editar evento", "Eliminar evento", "Consultar eventos", "Gerar codigo para evento", "Consultar presencas em evento", "Gerar ficheiro CSV (presencas em evento)", "Consultar presencas em eventos (por aluno)", "Gerar ficheiro CSV (presencas do aluno)", "Eliminar presencas de um evento", "Inserir presenca em evento", "Logout");
+            while(clientData.getToken() != null && clientData.getAdmin()){
+                option = PAInput.chooseOption("Escolha uma opcao:", "Criar novo evento", "Eliminar evento", "Consultar eventos", "Gerar codigo para evento", "Consultar presencas em evento", "Logout");
                 switch(option){
                     case 1-> {
                         criarEvento();
                     }
                     case 2-> {
-                        editarEvento();
-                    }
-                    case 3-> {
                         eliminarEvento();
                     }
-                    case 4-> {
-                        consultarEvento();
+                    case 3-> {
+                        consultarEventos();
                     }
-                    case 5-> {
+                    case 4-> {
                         gerarCodigoEvento();
                     }
-                    case 6-> {
+                    case 5 -> {
                         consultarPresencasEvento();
                     }
-                    case 7-> {
-                        gerarFicheiroCSVEvento();
-                    }
-                    case 8->{
-                        consultarPresencasPorAluno();
-                    }
-                    case 9-> {
-                        gerarFicheiroCSVPresencas();
-                    }
-                    case 10-> {
-                        eliminarPresencasEvento();
-                    }
-                    case 11-> {
-                        inserirPresencaEvento();
-                    }
-                    case 12 -> {
+                    case 6 -> {
                         logout();
-                    }
-                    default -> {
-                        return;
                     }
                 }
 
@@ -107,220 +85,29 @@ public class ClientUI {
         } while (true);
     }
 
-    private void criarEvento() {
-        String name = PAInput.readString("Nome do evento: ", false);
-        String local = PAInput.readString("Local do evento: ", false);
-        String date = PAInput.readString("Data do evento [DD-MM-YYYY]: ", false);
-        String timeStart = PAInput.readString("Hora de inicio do evento [HH:MM]: ", false);
-        String timeEnd = PAInput.readString("Hora de fim do evento [HH:MM]: ", false);
-
-        manageConnections.criarEvento(name, local, date, timeStart, timeEnd);
-    }
-
-    private void editarEvento() {
-        String idEvento = PAInput.readString("ID do evento: ", true);
-        ArrayList<ArrayList<String>> listaEventos = manageConnections.checkEvents();
-
-        for(int i = 0; i < listaEventos.size(); i++){
-            if(listaEventos.get(i).get(0).equals(idEvento)){
-                System.out.printf("%-3s | %-15s | %-15s | %-15s | %-15s | %s\n","ID","Nome","Local","Data","Hora de inicio","Hora de fim");
-                System.out.println("------------------------------------------------------------------------------------------");
-                System.out.printf("%-3s | %-15s | %-15s | %-15s | %-15s | %s\n",
-                        listaEventos.get(i).get(0), listaEventos.get(i).get(1), listaEventos.get(i).get(2),
-                        listaEventos.get(i).get(3), listaEventos.get(i).get(4), listaEventos.get(i).get(5));
-                System.out.println("------------------------------------------------------------------------------------------");
-            }
-        }
-
-        int option = PAInput.chooseOption("Escolha uma opcao:", "Nome", "Local", "Data", "Hora de inicio", "Hora de fim", "Voltar");
-        switch (option){
-            case 1 -> {
-                String name = PAInput.readString("Novo Nome: ", false);
-                manageConnections.editEvent(idEvento, 1, name);
-            }
-            case 2 -> {
-                String local = PAInput.readString("Novo Local: ", false);
-                manageConnections.editEvent(idEvento, 2, local);
-            }
-            case 3 -> {
-                String date = PAInput.readString("Nova Data: ", false);
-                manageConnections.editEvent(idEvento, 3, date);
-            }
-            case 4 -> {
-                String timeStart = PAInput.readString("Nova Hora de inicio: ", false);
-                manageConnections.editEvent(idEvento, 4, timeStart);
-            }
-            case 5 -> {
-                String timeEnd = PAInput.readString("Nova Hora de fim: ", false);
-                manageConnections.editEvent(idEvento, 5, timeEnd);
-            }
-            default -> {
-                return;
-            }
-        }
-    }
-
-    private void eliminarEvento() {
-        String idEvento = PAInput.readString("ID do evento: ", true);
-
-        manageConnections.deleteEvent(idEvento);
-    }
-
-    private void consultarEvento() {
-        ArrayList<ArrayList<String>> listaEventos = manageConnections.checkEvents();
-
-        System.out.printf("%-3s | %-15s | %-10s | %-15s | %-15s | %-15s | %-15s | %s\n","ID","Nome","Código","Local","Data","Hora de inicio","Hora de fim","Número presenças");
-        System.out.println("-----------------------------------------------------------------------------------------------------------------------------");
-        for (int i = 0; i < listaEventos.size(); i++) {
-            System.out.printf("%-3s | %-15s | %-10s | %-15s | %-15s | %-15s | %-15s | %s\n",
-                    listaEventos.get(i).get(0), listaEventos.get(i).get(1), listaEventos.get(i).get(2),
-                    listaEventos.get(i).get(3), listaEventos.get(i).get(4), listaEventos.get(i).get(5), listaEventos.get(i).get(6), listaEventos.get(i).get(7));
-
-        }
-        System.out.println("-----------------------------------------------------------------------------------------------------------------------------");
-    }
-
-    private void gerarCodigoEvento() {
-        String idEvento = PAInput.readString("ID do evento: ", true);
-        String timeEvento = PAInput.readString("Tempo de duração do código (em minutos): ", true);
-
-        manageConnections.generateEventCode(idEvento, timeEvento);
-    }
-
-    private void consultarPresencasEvento() {
-        String idEvento = PAInput.readString("ID do evento: ", true);
-
-        ArrayList<ArrayList<String>> lista = manageConnections.checkPresencesEvent(idEvento);
-
-        System.out.printf("%-15s | %-20s | %s\n","Nome","Email","nIdentificacao");
-        System.out.println("-----------------------------------------------------------------------------------------------------------------------------");
-
-        for(int i=0; i<lista.size(); i++){
-            System.out.printf("%-15s | %-20s | %s\n",lista.get(i).get(0),lista.get(i).get(1),lista.get(i).get(2));
-        }
-        System.out.println("-----------------------------------------------------------------------------------------------------------------------------");
-    }
-
-    private void gerarFicheiroCSVEvento() {
-        String idEvento = PAInput.readString("ID do evento: ", true);
-        System.out.println(manageConnections.generateCSV_event(idEvento));
-    }
-
-    private void consultarPresencasPorAluno() {
-        String email = PAInput.readString("Email do aluno: ", true);
-
-        ArrayList<ArrayList<String>> listaPresencas  = manageConnections.checkPresences2(email);
-
-        if(listaPresencas == null)
-            System.out.println("Não existem presencas para o aluno com o email "+email);
-
-        else {
-
-            System.out.println("REGISTO DE PRESENÇAS DO ALUNO " + email);
-            System.out.printf("%-3s | %-15s | %-15s | %-15s | %-15s | %s\n", "ID", "Nome", "Local", "Data", "Hora de inicio", "Hora de fim");
-            System.out.println("-------------------------------------------------------------------------------------------------------");
-            for (int i = 0; i < listaPresencas.size(); i++) {
-                System.out.printf("%-3s | %-15s | %-15s | %-15s | %-15s | %s\n",
-                        listaPresencas.get(i).get(0), listaPresencas.get(i).get(1), listaPresencas.get(i).get(2),
-                        listaPresencas.get(i).get(3), listaPresencas.get(i).get(4), listaPresencas.get(i).get(5));
-
-            }
-            System.out.println("-------------------------------------------------------------------------------------------------------");
-        }
-    }
-
-    private void gerarFicheiroCSVPresencas() {
-        String email = PAInput.readString("Email do aluno: ", true);
-        System.out.println(manageConnections.generateCSV_student(email));
-    }
-
-    private void eliminarPresencasEvento() {
-        String idEvento = PAInput.readString("ID do evento: ", true);
-        String email = PAInput.readString("Email do aluno: ", true);
-
-        System.out.println(manageConnections.deletePresence(idEvento, email));
-    }
-
-    private void inserirPresencaEvento() {
-        String idEvento = PAInput.readString("ID do evento: ", true);
-        String email = PAInput.readString("Email do aluno: ", true);
-
-        System.out.println(manageConnections.addPresence(idEvento, email));
-    }
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    // ALUNO
-    private void editarDados() {
-        System.out.println("Nome: " + manageConnections.getName() + "\nEmail: " + manageConnections.getEmail() + "\nPassword: " + manageConnections.getPassword() + "\nNumero de Identificacao: " + manageConnections.getNIdentificacao());
-        int option = PAInput.chooseOption("Escolha uma opcao:", "Nome", "Email", "Password", "Numero de Identificacao", "Voltar");
-
-        switch (option){
-            case 1 -> {
-                String name = PAInput.readString("Novo Nome: ", false);
-                manageConnections.editData(1, name);
-            }
-            case 2 -> {
-                String email = PAInput.readString("Novo Email: ", true);
-                manageConnections.editData(2, email);
-            }
-            case 3 -> {
-                String password = PAInput.readString("Nova Password: ", true);
-                manageConnections.editData(3, password);
-            }
-            case 4 -> {
-                String nIdentificacao = PAInput.readString("Novo Numero Identificacao: ", true);
-                manageConnections.editData(4, nIdentificacao);
-            }
-
-            default -> {
-                return;
-            }
-        }
-    }
-
-    private void submeterCodigo() {
-        String codigo = PAInput.readString("Codigo: ", true);
-        System.out.println(manageConnections.submitCode(codigo));
-    }
-
-    private void consultarPresencas() {
-        ArrayList<ArrayList<String>> listaPresencas = manageConnections.checkPresences();
-
-        System.out.println("REGISTO DE PRESENÇAS");
-        System.out.printf("%-3s | %-15s | %-15s | %-15s | %-15s | %s\n","ID","Nome","Local","Data","Hora de inicio","Hora de fim");
-        System.out.println("-------------------------------------------------------------------------------------------------------");
-        for (int i = 0; i < listaPresencas.size(); i++) {
-            System.out.printf("%-3s | %-15s | %-15s | %-15s | %-15s | %s\n",
-                    listaPresencas.get(i).get(0), listaPresencas.get(i).get(1), listaPresencas.get(i).get(2),
-                    listaPresencas.get(i).get(3), listaPresencas.get(i).get(4), listaPresencas.get(i).get(5));
-
-        }
-        System.out.println("-------------------------------------------------------------------------------------------------------");
-    }
-
-    private void gerarFicheiroCSV() {
-        System.out.println(manageConnections.generateCSV_student_own());
-    }
-
 
     private void login() {
         String email = PAInput.readString("Email: ", true);
         String password = PAInput.readString("Password: ", true);
 
-        if(manageConnections.login(email, password) == 0)
-            logged = true;
-       }
+        String credentials = Base64.getEncoder().encodeToString((email+":"+password).getBytes());
+        try {
+            clientData.setToken(sendRequestAndShowResponse(ENDPOINTS.loginURI, "POST","basic "+ credentials, null)); //Base64(admin:admin) YWRtaW46YWRtaW4=
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        if(clientData.getToken() != null) {
+            try {
+                if (sendRequestAndShowResponse(ENDPOINTS.isAdminURI, "GET", "bearer " + clientData.getToken(), null).equals("Current user is admin!"))
+                    clientData.setAdmin(true);
+                else
+                    clientData.setAdmin(false);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     private void register() throws IOException {
         String username = PAInput.readString("Nome: ", false);
@@ -328,16 +115,97 @@ public class ClientUI {
         String password = PAInput.readString("Password: ", true);
         String nIdentificacao = PAInput.readString("Numero de Identificacao: ", true);
 
-        manageConnections.register(email, password, username, nIdentificacao);
+        sendRequestAndShowResponse(ENDPOINTS.registerURI+"?name="+username+"&email="+email+"&password="+password+"&nid="+nIdentificacao, "GET", null, null);
     }
-
-
-
 
     private void logout(){
-       if(manageConnections.logout())
-           logged = false;
+        clientData = new ClientData();
     }
+
+
+    // ADMIN
+    private void criarEvento() {
+        String name = PAInput.readString("Nome do evento: ", false);
+        String local = PAInput.readString("Local do evento: ", false);
+        String date = PAInput.readString("Data do evento [DD-MM-YYYY]: ", false);
+        String timeStart = PAInput.readString("Hora de inicio do evento [HH:MM]: ", false);
+        String timeEnd = PAInput.readString("Hora de fim do evento [HH:MM]: ", false);
+
+        try {
+            sendRequestAndShowResponse(ENDPOINTS.createEventURI+"?name="+name+"&local="+local+"&dataR="+date+"&horaI="+timeStart+"&horaF="+timeEnd, "GET", "bearer " + clientData.getToken(), null);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void eliminarEvento() {
+        String idEvento = PAInput.readString("ID do evento: ", true);
+
+        try {
+            sendRequestAndShowResponse(ENDPOINTS.deleteEventURI+"?id="+idEvento, "GET", "bearer " + clientData.getToken(), null);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void consultarEventos() {
+        String filter = "";
+        filter = PAInput.readString("Filtro: ", false, true);
+
+        try{
+            if(filter.isEmpty())
+                sendRequestAndShowResponse(ENDPOINTS.checkEventsURI, "GET", "bearer " + clientData.getToken(), null);
+            else
+                sendRequestAndShowResponse(ENDPOINTS.checkEventsURI+"?filter="+filter, "GET", "bearer " + clientData.getToken(), null);
+        }catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void gerarCodigoEvento() {
+        String idEvento = PAInput.readString("ID do evento: ", true);
+        String timeEvento = PAInput.readString("Tempo de duração do código (em minutos): ", true);
+
+        try {
+            sendRequestAndShowResponse(ENDPOINTS.generateCodeURI+"?id="+idEvento+"&time="+timeEvento, "GET", "bearer " + clientData.getToken(), null);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void consultarPresencasEvento() {
+        String idEvento = PAInput.readString("ID do evento: ", true);
+
+        try {
+            sendRequestAndShowResponse(ENDPOINTS.checkEventPresencesURI+"?id="+idEvento, "GET", "bearer " + clientData.getToken(), null);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+
+    
+    // ALUNO
+    private void submeterCodigo() {
+        String codigo = PAInput.readString("Codigo: ", true);
+
+        try {
+            sendRequestAndShowResponse(ENDPOINTS.submitCodeURI+"?code="+codigo, "GET", "bearer " + clientData.getToken(), null);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void consultarPresencas() {
+        try {
+            sendRequestAndShowResponse(ENDPOINTS.ownStudentPresences, "GET", "bearer " + clientData.getToken(), null);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+
 
     private void exit() {
         System.out.println("A sair...");
